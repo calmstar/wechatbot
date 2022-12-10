@@ -1,11 +1,11 @@
 package bootstrap
 
 import (
+	"fmt"
 	"github.com/869413421/wechatbot/handlers"
 	"github.com/eatmoreapple/openwechat"
 	"log"
 )
-
 
 func Run() {
 	//bot := openwechat.DefaultBot()
@@ -28,6 +28,7 @@ func Run() {
 			return
 		}
 	}
+	fmt.Println("login success----")
 	// 阻塞主goroutine, 直到发生异常或者用户主动退出
 	bot.Block()
 }

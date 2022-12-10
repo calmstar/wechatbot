@@ -16,6 +16,8 @@ type Configuration struct {
 	AutoPass bool `json:"auto_pass"`
 	// 会话超时时间
 	SessionTimeout time.Duration `json:"session_timeout"`
+	// 只接受指定群组的消息
+	AcceptGroups []string `json:"accept_groups"`
 }
 
 var config *Configuration
@@ -45,6 +47,7 @@ func LoadConfig() *Configuration {
 		ApiKey := os.Getenv("ApiKey")
 		AutoPass := os.Getenv("AutoPass")
 		SessionTimeout := os.Getenv("SessionTimeout")
+		AcceptGroups := os.Getenv("AcceptGroups")
 		if ApiKey != "" {
 			config.ApiKey = ApiKey
 		}
@@ -58,6 +61,12 @@ func LoadConfig() *Configuration {
 				return
 			}
 			config.SessionTimeout = duration
+		}
+		if AcceptGroups != "" {
+			err := json.Unmarshal([]byte(AcceptGroups), &config.AcceptGroups)
+			if err != nil {
+				log.Fatalf("Unmarshal AcceptGroups error:%v", err)
+			}
 		}
 	})
 	return config

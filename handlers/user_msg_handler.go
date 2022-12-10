@@ -28,6 +28,11 @@ func NewUserMessageHandler() MessageHandlerInterface {
 
 // ReplyText 发送文本消息到群
 func (g *UserMessageHandler) ReplyText(msg *openwechat.Message) error {
+	// 含有关键词回复
+	if !hasKeyword(msg.Content) {
+		return nil
+	}
+	msg.Content = string([]byte(msg.Content)[3:])
 	// 接收私聊消息
 	sender, err := msg.Sender()
 	log.Printf("Received User %v Text Msg : %v", sender.NickName, msg.Content)
@@ -58,7 +63,7 @@ func (g *UserMessageHandler) ReplyText(msg *openwechat.Message) error {
 	reply = strings.TrimSpace(reply)
 	reply = strings.Trim(reply, "\n")
 	UserService.SetUserSessionContext(sender.ID(), requestText, reply)
-	reply = "本消息由ChatGPTBot回复：\n" + reply
+	//reply = "本消息由ChatGPTBot回复：\n" + reply
 	_, err = msg.ReplyText(reply)
 	if err != nil {
 		log.Printf("response user error: %v \n", err)

@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"github.com/869413421/wechatbot/config"
 	"github.com/869413421/wechatbot/gtp"
 	"github.com/eatmoreapple/openwechat"
 	"log"
@@ -31,23 +32,34 @@ func (g *GroupMessageHandler) ReplyText(msg *openwechat.Message) error {
 	// 接收群消息
 	sender, err := msg.Sender()
 	group := openwechat.Group{User: sender}
-	log.Printf("Received Group %v Text Msg : %v", group.NickName, msg.Content)
 
-	// 不是@的不处理
-	if !msg.IsAt() {
+	// 只接受指定群组的消息
+	whiteGroup := false
+	for _, v := range config.LoadConfig().AcceptGroups {
+		if strings.TrimSpace(group.NickName) == strings.TrimSpace(v) {
+			whiteGroup = true
+			break
+		}
+	}
+	if !whiteGroup {
 		return nil
 	}
-
-	// 获取@我的用户
-	groupSender, err := msg.SenderInGroup()
-	if err != nil {
-		log.Printf("get sender in group error :%v \n", err)
-		return err
+	// 只处理 艾特了的和含有gpt关键字 的消息
+	if !msg.IsAt() && !hasKeyword(msg.Content) {
+		return nil
 	}
-	atText := "@" + groupSender.NickName + " "
+	log.Printf("Received Group %v Text Msg : %v", group.NickName, msg.Content)
+
+	// 获取发消息的用户
+	//groupSender, err := msg.SenderInGroup()
+	//if err != nil {
+	//	log.Printf("get sender in group error :%v \n", err)
+	//	return err
+	//}
+	//atText := "@" + groupSender.NickName + " "
 
 	if UserService.ClearUserSessionContext(sender.ID(), msg.Content) {
-		_, err = msg.ReplyText(atText + "上下文已经清空了，你可以问下一个问题啦。")
+		_, err = msg.ReplyText("上下文已经清空了，你可以问下一个问题啦。")
 		if err != nil {
 			log.Printf("response user error: %v \n", err)
 		}
@@ -66,18 +78,18 @@ func (g *GroupMessageHandler) ReplyText(msg *openwechat.Message) error {
 		if err != nil {
 			log.Printf("response group error: %v \n", err)
 		}
-		return err
+		reply = "请重复一遍你的问题"
 	}
 	if reply == "" {
-		return nil
+		reply = "请重复一遍你的问题"
 	}
 
-	// 回复@我的用户
+	// 回复用户
 	reply = strings.TrimSpace(reply)
 	reply = strings.Trim(reply, "\n")
 	// 设置上下文
 	UserService.SetUserSessionContext(sender.ID(), requestText, reply)
-	replyText := atText + reply
+	replyText := msg.Content + "\n" + "------" + "\n" + reply
 	_, err = msg.ReplyText(replyText)
 	if err != nil {
 		log.Printf("response group error: %v \n", err)
@@ -89,6 +101,9 @@ func (g *GroupMessageHandler) ReplyText(msg *openwechat.Message) error {
 func buildRequestText(sender *openwechat.User, msg *openwechat.Message) string {
 	replaceText := "@" + sender.Self.NickName
 	requestText := strings.TrimSpace(strings.ReplaceAll(msg.Content, replaceText, ""))
+	if hasKeyword(msg.Content) {
+		requestText = string([]byte(requestText)[3:])
+	}
 	if requestText == "" {
 		return ""
 	}
