@@ -2,6 +2,7 @@ package bootstrap
 
 import (
 	"fmt"
+	"github.com/869413421/wechatbot/config"
 	"github.com/869413421/wechatbot/handlers"
 	"github.com/eatmoreapple/openwechat"
 	"log"
@@ -19,6 +20,7 @@ func Run() {
 
 	// 创建热存储容器对象
 	reloadStorage := openwechat.NewJsonFileHotReloadStorage("storage.json")
+	config.LoadConfig()
 
 	// 执行热登录
 	err := bot.HotLogin(reloadStorage)
